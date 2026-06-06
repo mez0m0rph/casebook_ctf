@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.env
+checker/checker_flags.json
+/data/
+*.sqlite3

@@ -1,0 +1,15 @@
+services:
+  casebook:
+    build: .
+    container_name: casebook-ctf
+    ports:
+      - "8080:8080"
+    environment:
+      DATA_DIR: /data
+      SHARE_SALT: winter-audit
+    volumes:
+      - casebook-data:/data
+    restart: unless-stopped
+
+volumes:
+  casebook-data:
