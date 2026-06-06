@@ -4,3 +4,7 @@ __pycache__/
 checker/checker_flags.json
 /data/
 *.sqlite3
+
+.venv/
+__pycache__/
+*.pyc

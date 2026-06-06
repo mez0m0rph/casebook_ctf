@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 APP_NAME = "Casebook AD CTF Service"
@@ -16,6 +17,43 @@ DB_PATH = DATA_DIR / "casebook.sqlite3"
 SHARE_SALT = os.getenv("SHARE_SALT", "winter-audit")
 
 app = FastAPI(title=APP_NAME, version="1.0.0")
+
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return """
+    <!doctype html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Casebook CTF Service</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; line-height: 1.5; }
+            code { background: #eee; padding: 2px 5px; border-radius: 4px; }
+        </style>
+    </head>
+    <body>
+        <h1>Casebook CTF Service</h1>
+        <p>Attack-Defense CTF service for storing incident cases and private investigation notes.</p>
+
+        <h2>Service endpoints</h2>
+        <ul>
+            <li><code>GET /health</code> — health check</li>
+            <li><code>POST /api/users/register</code> — create user</li>
+            <li><code>POST /api/sessions/login</code> — login</li>
+            <li><code>POST /api/cases</code> — create case with private flag</li>
+            <li><code>GET /api/cases/{id}</code> — get own case</li>
+            <li><code>GET /api/shared/{code}</code> — shared case view</li>
+            <li><code>GET /api/audit/search</code> — audit search</li>
+        </ul>
+
+        <h2>CTF logic</h2>
+        <p>The checker puts flags into private case notes and retrieves them through legitimate API logic.</p>
+        <p>The service contains intentional vulnerabilities for educational Attack-Defense CTF usage.</p>
+    </body>
+    </html>
+    """
+
 
 
 def db() -> sqlite3.Connection:
