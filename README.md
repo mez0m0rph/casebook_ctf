@@ -108,11 +108,12 @@ Authorization: Bearer <token>
 
 Чекер находится в `checker/checker.py`.
 
-Установка зависимостей:
+Установка зависимостей (рекомендуется виртуальное окружение):
 
 ```bash
 cd checker
-python3 -m pip install -r requirements.txt
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 Команды:
@@ -122,6 +123,12 @@ python3 checker.py 127.0.0.1 8080 check
 python3 checker.py 127.0.0.1 8080 put ABCDEFGHIJKLMNOPQRSTUVWXYZ12345=
 python3 checker.py 127.0.0.1 8080 get '<flag_id>' ABCDEFGHIJKLMNOPQRSTUVWXYZ12345=
 python3 checker.py 127.0.0.1 8080 get_flags
+```
+
+Чекер не выводит текст — результат передаётся через exit code. Чтобы увидеть его явно:
+
+```bash
+python3 checker.py 127.0.0.1 8080 check; echo "Exit code: $?"
 ```
 
 Если `put` запустить без флага, чекер сам сгенерирует случайный флаг в формате `[A-Z0-9]{31}=`.
@@ -152,12 +159,12 @@ md5(f"{case_id}:{SHARE_SALT}").hexdigest()[:10]
 
 Проблема: код не привязан к владельцу, не содержит случайности и может быть сгенерирован атакующим, который знает исходный код сервиса. Так как `case_id` последовательный, атакующий перебирает id, вычисляет валидные share-коды и получает чужие `secret_note`.
 
-PoC:
+PoC (запускать из корня проекта):
 
 ```bash
-cd exploits
-python3 -m pip install -r requirements.txt
-python3 exploit_share_code.py 127.0.0.1 8080 200
+python3 -m venv exploits/.venv && source exploits/.venv/bin/activate
+pip install -r exploits/requirements.txt
+python3 exploits/exploit_share_code.py 127.0.0.1 8080 200
 ```
 
 ## Уязвимость 2: SQL Injection в audit search
@@ -177,37 +184,8 @@ sql = f"SELECT ... FROM cases WHERE category = '{category}' AND title LIKE '%{ne
 
 Проблема: параметр `category` попадает в SQL без параметризации. Атакующий создаёт обычный аккаунт, отправляет payload `network' OR 1=1 --` и получает строки чужих кейсов. Из-за отладочного поля `debug_preview` в ответ попадает `secret_note`.
 
-PoC:
+PoC (запускать из корня проекта, окружение из предыдущего шага уже активно):
 
 ```bash
-cd exploits
-python3 -m pip install -r requirements.txt
-python3 exploit_search_sqli.py 127.0.0.1 8080
+python3 exploits/exploit_search_sqli.py 127.0.0.1 8080
 ```
-
-## Почему это подходит под Attack-Defense CTF
-
-- Сервис разворачивается как веб-приложение через Docker.
-- Есть `Dockerfile` и `docker-compose.yml`.
-- Порт явно указан: `8080`.
-- Чекер может положить флаг через обычную бизнес-логику.
-- Флаг сохраняется на стороне сервиса в SQLite.
-- Чекер может получить флаг легитимно через API владельца.
-- Есть две уязвимости, через которые можно получить чужие флаги.
-- Уязвимости не являются эндпоинтами вида `/flag` или `/all_flags`.
-- Есть PoC-эксплойты на Python.
-- Данные сохраняются между перезапусками контейнера через Docker volume.
-- Код распространяется по лицензии MIT.
-
-## Рекомендации для демонстрации преподавателю
-
-1. Запустить сервис через `docker compose up --build`.
-2. Запустить `checker.py ... check`.
-3. Положить несколько флагов через `checker.py ... put`.
-4. Проверить один флаг через `checker.py ... get`.
-5. Показать `checker.py ... get_flags`.
-6. Запустить оба exploit-скрипта и показать, что они находят флаги.
-7. Кратко объяснить, как исправить уязвимости:
-   - share-code должен быть случайным, длинным, храниться в БД и иметь ACL/TTL;
-   - SQL-запросы должны использовать параметризованные выражения;
-   - audit endpoint не должен возвращать приватные поля.
